@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Page Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="./styles.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+
+    <div class="card">
+        <!-- Info Icon Button -->
+        <button onclick="showInfoModal()"
+            class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors p-1"
+            title="Information">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+        </button>
+
+        <div class="mb-6 text-center">
+            <h1 class="text-2xl font-bold text-slate-800">Results Page Generator</h1>
+        </div>
+
+        <!-- Image Preview Area -->
+        <div id="preview-container" class="img-preview">
+            <span id="preview-placeholder">Image Preview</span>
+        </div>
+
+        <form id="generator-form">
+            <div class="form-group text-center">
+                <label for="page-title">Page Title</label>
+                <input type="text" id="page-title" placeholder="Enter your page heading" required>
+            </div>
+
+            <div class="form-group text-center">
+                <label for="img-url">Image URL</label>
+                <input type="text" id="img-url"
+                    placeholder="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05" required>
+            </div>
+
+            <!-- Centered Color Section -->
+            <div class="form-group text-center">
+                <label>Theme Accent Color</label>
+                <div class="flex flex-col items-center justify-center p-4">
+                    <!-- Hidden input -->
+                    <input type="color" id="theme-color" value="#2563eb" class="sr-only">
+
+                    <!-- Custom Trigger -->
+                    <div id="color-trigger" class="color-swatch" style="background-color: #2563eb;"></div>
+
+                    <!-- Editable Hex Input -->
+                    <input type="text" id="color-hex" class="hex-input" value="#2563eb" maxlength="7">
+
+                    <p class="text-xs text-slate-400 mt-1">Click circle to pick or type hex code</p>
+                </div>
+            </div>
+
+            <div class="form-group text-center">
+                <label for="json-data">Results Configuration</label>
+                <textarea id="json-data" class="p-2" rows="4"
+                    placeholder='{ "title": "Hello World", "author": "User" }'></textarea>
+            </div>
+
+            <button type="submit" class="btn">Create Results Page</button>
+        </form>
+
+        <div id="message-box"></div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'page_generator_state';
+
+        const form = document.getElementById('generator-form');
+        const colorPicker = document.getElementById('theme-color');
+        const colorTrigger = document.getElementById('color-trigger');
+        const colorHexInput = document.getElementById('color-hex');
+        const messageBox = document.getElementById('message-box');
+        const titleInput = document.getElementById('page-title');
+        const imgInput = document.getElementById('img-url');
+        const jsonDataInput = document.getElementById('json-data');
+        const previewContainer = document.getElementById('preview-container');
+        const previewPlaceholder = document.getElementById('preview-placeholder');
+
+        /**
+         * Portable Info Modal Function
+         */
+        function showInfoModal() {
+            if (document.getElementById('portable-info-modal')) return;
+
+            const modalOverlay = document.createElement('div');
+            modalOverlay.id = 'portable-info-modal';
+            modalOverlay.style = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: flex; align-items: center;
+            justify-content: center; z-index: 1000; backdrop-filter: blur(4px);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+        `;
+
+            const modalContent = document.createElement('div');
+            modalContent.style = `
+            background: white; padding: 2.5rem 2rem 2rem; border-radius: 1rem;
+            max-width: 450px; width: 90%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+            position: relative;
+        `;
+
+            modalContent.innerHTML = `
+            <button id="close-modal-x" style="position: absolute; top: 1rem; right: 1rem; background: transparent; border: none; cursor: pointer; color: #94a3b8; padding: 4px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: #1e293b; margin-bottom: 0.75rem; text-align: center;">Results Generator</h2>
+            <p style="color: #64748b; line-height: 1.6; font-size: 0.9375rem; margin-bottom: 1.25rem;">
+                &copy; 2025 Joe Sunley. This tool is provided as-is for generating static HTML results pages. Settings are stored locally in your browser.
+            </p>
+            <div style="margin-bottom: 2rem;">
+                <h3 style="font-size: 0.875rem; font-weight: 600; color: #475569; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.025em;">Links</h3>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <a href="https://github.com/joesunley/results-generator" target="_blank" style="color: #2563eb; text-decoration: none; font-size: 0.875rem; display: flex; align-items: center; gap: 6px;">
+                        GitHub Repository
+                    </a>
+                    <a href="https://joesunley.com" target="_blank" style="color: #2563eb; text-decoration: none; font-size: 0.875rem; display: flex; align-items: center; gap: 6px;">
+                        joesunley.com
+                    </a>
+                </div>
+            </div>
+            <div style="border-top: 1px solid #f1f5f9; padding-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                <button id="clear-storage-btn" style="background: #ef4444; color: white; border: none; padding: 0.75rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s;">
+                    Reset Tool Data
+                </button>
+                <p style="color: #94a3b8; font-size: 0.75rem; text-align: center;">
+                    Clearing local storage will permanently delete your saved results page.
+                </p>
+            </div>
+        `;
+
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalOverlay);
+
+            const closeModal = () => document.body.removeChild(modalOverlay);
+
+            document.getElementById('close-modal-x').onclick = closeModal;
+            modalOverlay.onclick = (e) => { if (e.target === modalOverlay) closeModal(); };
+
+            document.getElementById('clear-storage-btn').onclick = () => {
+                if (confirm("Confirm Reset: This will wipe your saved title, image URL, and JSON data. Proceed?")) {
+                    // Clear Storage
+                    localStorage.removeItem(STORAGE_KEY);
+
+                    // Reset Form Inputs
+                    titleInput.value = '';
+                    imgInput.value = '';
+                    jsonDataInput.value = '';
+
+                    // Reset Theme UI
+                    updateColorUI('#2563eb');
+
+                    // Reset Preview
+                    updateImagePreview('');
+
+                    // Close Modal and notify
+                    closeModal();
+                    showMessage("Settings have been reset.", "bg-slate-100 text-slate-700");
+                }
+            };
+        }
+
+        function saveState() {
+            const state = {
+                title: titleInput.value,
+                imgUrl: imgInput.value,
+                themeColor: colorPicker.value,
+                jsonData: jsonDataInput.value
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        window.addEventListener('load', () => {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    const state = JSON.parse(saved);
+                    titleInput.value = state.title || '';
+                    imgInput.value = state.imgUrl || '';
+                    jsonDataInput.value = state.jsonData || '';
+                    if (state.themeColor) updateColorUI(state.themeColor);
+                    updateImagePreview(state.imgUrl);
+                } catch (e) { console.error(e); }
+            }
+        });
+
+        colorTrigger.addEventListener('click', () => colorPicker.click());
+
+        function updateImagePreview(url) {
+            url = url.trim();
+            if (url) {
+                const img = new Image();
+                img.onload = () => {
+                    previewContainer.style.backgroundImage = `url('${url}')`;
+                    previewContainer.style.borderStyle = 'solid';
+                    previewPlaceholder.style.display = 'none';
+                };
+                img.onerror = () => {
+                    previewContainer.style.backgroundImage = 'none';
+                    previewContainer.style.borderStyle = 'dashed';
+                    previewPlaceholder.style.display = 'block';
+                    previewPlaceholder.textContent = 'Invalid Image URL';
+                };
+                img.src = url;
+            } else {
+                previewContainer.style.backgroundImage = 'none';
+                previewContainer.style.borderStyle = 'dashed';
+                previewPlaceholder.style.display = 'block';
+                previewPlaceholder.textContent = 'Image Preview';
+            }
+        }
+
+        titleInput.addEventListener('input', saveState);
+        imgInput.addEventListener('input', (e) => {
+            updateImagePreview(e.target.value);
+            saveState();
+        });
+
+        function updateColorUI(hex) {
+            colorTrigger.style.backgroundColor = hex;
+            colorPicker.value = hex;
+            colorHexInput.value = hex.toUpperCase();
+        }
+
+        colorPicker.addEventListener('input', (e) => {
+            updateColorUI(e.target.value);
+            saveState();
+        });
+
+        colorHexInput.addEventListener('input', (e) => {
+            let val = e.target.value;
+            if (!val.startsWith('#')) { val = '#' + val; colorHexInput.value = val; }
+            const hexRegex = /^#([A-Fa-f0-9]{3}){1,2}$/;
+            if (hexRegex.test(val)) {
+                if (val.length === 4) {
+                    const expanded = '#' + val[1] + val[1] + val[2] + val[2] + val[3] + val[3];
+                    colorPicker.value = expanded;
+                    colorTrigger.style.backgroundColor = expanded;
+                } else {
+                    colorPicker.value = val;
+                    colorTrigger.style.backgroundColor = val;
+                }
+                saveState();
+            }
+        });
+
+        jsonDataInput.addEventListener('input', saveState);
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            try { if (jsonDataInput.value.trim() !== "") JSON.parse(jsonDataInput.value); }
+            catch (err) { showMessage("Invalid JSON format.", "bg-red-100 text-red-700"); return; }
+            generateFile(titleInput.value, imgInput.value, colorPicker.value, jsonDataInput.value);
+        });
+
+        function showMessage(text, classes) {
+            messageBox.textContent = text;
+            messageBox.className = `mt-4 p-3 rounded-md text-sm ${classes}`;
+            messageBox.style.display = 'block';
+            setTimeout(() => { messageBox.style.display = 'none'; }, 4000);
+        }
+    </script>
+
+    <script src="./generate.js"></script>
+</body>
+
+</html>
